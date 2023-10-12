@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Ander Aava, veebiprogrammeerimine 2023</title>
+</head>
+<body>
+		<img src="/banner/vp_banner.png" alt="veebiprogrammeerimise kursuse banner">
+		<h1><%= h1 %></h1>
+		<ul>
+			<% proverbs.forEach(function(sentence){ %>
+				<li><%= sentence %></li>
+			<% }); %>
+		</ul>
+		<hr>
+		<ul>
+			<li><a href="/">Avalehele</a></li>
+		</ul>
+		<hr>
+</body>
+</html>
