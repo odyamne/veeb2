@@ -6,16 +6,13 @@
 </head>
 <body>
 	<img src="/banner/vp_banner.png" alt="veebiprogrammeerimise kursuse banner">
-	<h1>Uudised</h1>
+	<h1>Uudis</h1>
 	<ul>
 		<li><a href="/news">Uudiste avaleht</a></li>
 		<li><a href="/">Avalehele</a></li>
 	</ul>
 	<hr>
-	<h2>Uudised</h2>
-	<% allNews.forEach(function(news){ %>
-		<li><a href="/news/read/<%= news.id %>"><%= news.title %></a></li>
-	<% }); %>
-
+	<h2><%= allNews[0].title %></h2>
+	<p><%= allNews[0].content %></p>
 </body>
 </html>

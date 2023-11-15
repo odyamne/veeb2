@@ -6,7 +6,7 @@ const bodyparser = require('body-parser');
 const dateInfo = require('./datetime_both');
 const dbConfig = require('../../vp23config');
 const dataBase = 'if23_ander_aa';
-
+const timeInfo = require('./datetime_et');
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -99,15 +99,67 @@ app.get('/news/add', (req,res)=> {
 	res.render('addnews');
 });
 
-app.get('/news/read', (req,res)=> {
-	res.render('readnews');
+app.post('/news/add', (req,res)=> {
+	let notice = '';
+	let sql  = 'INSERT INTO vp_news (title, content, expire, userid) VALUES (?, ?, ?, 1)';
+	conn.query(sql, [req.body.titleInput, req.body.contentInput, req.body.expireInput], (err, result)=>{
+		if(err) {
+			notice = 'Andmete salvestamine ebaõnnestus' + err;
+			res.render('addnews', {notice: notice});
+            throw err;
+		}
+		else {
+			notice = 'Uudise ' + req.body.titleInput + ' salvestamine õnnestus';
+			res.render('addnews', {notice: notice});
+		}
+	});
 });
 
-app.get('/news/read/:id', (req,res)=> {
-	//res.render('readnews');
-	console.log(req.params);
-	console.log(req.query);
-	res.send('Vaatame uudist, mille id on: ' + req.params.id);
+
+app.get('/news/read', (req, res)=> {
+	//let allNews = 'SELECT * FROM "vpnews" WHERE expire > ? AND deleted IS NULL ORDER BY id DESC';
+	let timeSQL = timeInfo.dateSQLformated();
+	let allNews = 'SELECT title, content FROM vp_news WHERE expire > \'' + timeSQL + '\' AND deleted IS NULL ORDER BY id DESC';
+	console.log(allNews);
+	conn.query(allNews, [timeSQL], (err, result)=>{
+	//conn.query(allNews,  (err, result)=>{
+		if (err){
+            throw err;
+			let info = 'Uudiseid ei suudetud lugeda';
+			console.log(result)
+			res.render('readnews', {allNews: info});
+            
+		}
+		else {
+			res.render('readnews', {allNews: result});
+		}
+	});
+});
+
+app.get('/news/read/:id', (req, res) => { 
+    // Spetsiifilise ID-ga SQL päring
+    let allNews = 'SELECT id, title, content FROM vp_news WHERE id = ? AND expire > ? AND deleted IS NULL';
+    let timeSQL = timeInfo.dateSQLformated();
+    // Võta ID päringust
+    let newsID = req.params.id;
+
+    // Vii päring läbi
+    conn.query(allNews, [newsID, timeSQL], (err, result) => {
+        if (err) {
+        throw err;
+        let info = 'Uudiseid ei suudetud lugeda';
+        console.log(result)
+        res.render('newssingle', { allNews: info });
+        }
+        else {
+            if (result.length === 0) {
+                res.send('Uudist ei leitud');
+            }
+        else {
+            res.render('newssingle', { allNews: result });
+            }
+        }
+    });
 });
 
 
