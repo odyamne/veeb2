@@ -12,7 +12,14 @@
 		<li><a href="/">Avalehele</a></li>
 	</ul>
 	<hr>
-	<h2><%= allNews[0].title %></h2>
-	<p><%= allNews[0].content %></p>
+	<h2>!Uudis!</h2>
+    
+    <% if (news) { %>
+        <h3><%= news.title %></h3>
+        <p>Lisatud: <%= news.added %></p>
+        <p><%= news.content %></p>
+    <% } else { %>
+        <p>News not found</p>
+    <% } %>
 </body>
 </html>

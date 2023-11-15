@@ -90,81 +90,6 @@ app.post ('/eestifilm/lisapersoon', (req,res)=>{
     });
 });
 
-app.get('/news', (req,res)=> {
-	res.render('news');
-});
-
-
-app.get('/news/add', (req,res)=> {
-	res.render('addnews');
-});
-
-app.post('/news/add', (req,res)=> {
-	let notice = '';
-	let sql  = 'INSERT INTO vp_news (title, content, expire, userid) VALUES (?, ?, ?, 1)';
-	conn.query(sql, [req.body.titleInput, req.body.contentInput, req.body.expireInput], (err, result)=>{
-		if(err) {
-			notice = 'Andmete salvestamine ebaõnnestus' + err;
-			res.render('addnews', {notice: notice});
-            throw err;
-		}
-		else {
-			notice = 'Uudise ' + req.body.titleInput + ' salvestamine õnnestus';
-			res.render('addnews', {notice: notice});
-		}
-	});
-});
-
-
-app.get('/news/read', (req, res)=> {
-	//let allNews = 'SELECT * FROM "vpnews" WHERE expire > ? AND deleted IS NULL ORDER BY id DESC';
-	let timeSQL = timeInfo.dateSQLformated();
-	let allNews = 'SELECT title, content FROM vp_news WHERE expire > \'' + timeSQL + '\' AND deleted IS NULL ORDER BY id DESC';
-	console.log(allNews);
-	conn.query(allNews, [timeSQL], (err, result)=>{
-	//conn.query(allNews,  (err, result)=>{
-		if (err){
-            throw err;
-			let info = 'Uudiseid ei suudetud lugeda';
-			console.log(result)
-			res.render('readnews', {allNews: info});
-            
-		}
-		else {
-			res.render('readnews', {allNews: result});
-		}
-	});
-});
-
-app.get('/news/read/:id', (req, res) => { 
-    // Spetsiifilise ID-ga SQL päring
-    let allNews = 'SELECT id, title, content FROM vp_news WHERE id = ? AND expire > ? AND deleted IS NULL';
-    let timeSQL = timeInfo.dateSQLformated();
-    // Võta ID päringust
-    let newsID = req.params.id;
-
-    // Vii päring läbi
-    conn.query(allNews, [newsID, timeSQL], (err, result) => {
-        if (err) {
-        throw err;
-        let info = 'Uudiseid ei suudetud lugeda';
-        console.log(result)
-        res.render('newssingle', { allNews: info });
-        }
-        else {
-            if (result.length === 0) {
-                res.send('Uudist ei leitud');
-            }
-        else {
-            res.render('newssingle', { allNews: result });
-            }
-        }
-    });
-});
-
-
-
-
 app.get('/namelog', (req, res) =>{
     fs.readFile("public/txtfiles/log.txt", "utf8", (err, data)=>{	
         if(err){
@@ -190,6 +115,69 @@ app.get('/namelog', (req, res) =>{
         res.render('namelist', {h1: 'Nimekirjed', entries: formattedEntries});
 
         };
+    });
+});
+
+app.get('/news', (req,res)=> {
+	res.render('news');
+});
+
+
+app.get('/news/add', (req,res)=> {
+	res.render('addnews');
+});
+
+app.post('/news/add', (req,res)=> {
+	let notice = '';
+	let newsAddSql  = 'INSERT INTO vp_news (title, content, expire, userid) VALUES (?, ?, ?, 1)';
+	conn.query(newsAddSql, [req.body.titleInput, req.body.contentInput, req.body.expireInput], (err, result)=>{
+		if(err) {
+			notice = 'Andmete salvestamine ebaõnnestus' + err;
+			res.render('addnews', {notice: notice});
+            throw err;
+		}
+		else {
+			notice = 'Uudise ' + req.body.titleInput + ' salvestamine õnnestus';
+			res.render('addnews', {notice: notice});
+		}
+	});
+});
+
+
+app.get('/news/read', (req, res)=> {
+	//let allNews = 'SELECT * FROM "vpnews" WHERE expire > ? AND deleted IS NULL ORDER BY id DESC';
+	let timeSQL = timeInfo.dateSQLformated();
+	let readNewsSql = 'SELECT * FROM vp_news WHERE expire > \'' + timeSQL + '\' AND deleted IS NULL ORDER BY id DESC';
+	conn.query(readNewsSql, [timeSQL], (err, result)=>{
+	//conn.query(allNews,  (err, result)=>{
+		if (err){
+            throw err;
+		}
+		else {
+            let newsList = result;
+			res.render('readnews', {newsList: newsList});
+		}
+	});
+});
+
+app.get('/news/read/:id', (req, res) => { 
+    // Spetsiifilise ID-ga SQL päring
+    let newsSQL = 'SELECT * FROM vp_news WHERE id = ? AND deleted IS NULL';
+    // Võta ID päringust
+    let newsID = req.params.id;
+
+    // Vii päring läbi
+    conn.query(newsSQL, [newsID], (err, result) => {
+        if (err) {
+            throw err;
+        } else {
+            if (result.length > 0) {
+                const newsItem = result[0];
+                res.render('newssingle', { news: newsItem });
+            }else {
+                throw err;
+            }
+        }
     });
 });
 
