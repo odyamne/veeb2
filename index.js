@@ -7,10 +7,17 @@ const dateInfo = require('./datetime_both');
 const dbConfig = require('../../vp23config');
 const dataBase = 'if23_ander_aa';
 const timeInfo = require('./datetime_et');
+const multer = require('multer');
+//Seame multer-i jaoks vahevara, mis määrab üleslaadimise kataloogi
+const upload = multer({dest:'./public/gallery/orig/'});
+const mime = require('mime');
+const sharp = require('sharp');
+
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
-app.use(bodyparser.urlencoded({extended:false}));
+//app.use(bodyparser.urlencoded({extended:false})); ENNE FOTOGALERIID
+app.use(bodyparser.urlencoded({extended:true}));
 
 //loon andmebaasiühenduse
 const conn = mysql.createConnection({
@@ -173,7 +180,7 @@ app.get('/news/read/:id', (req, res) => {
         } else {
             if (result.length > 0) {
                 const newsItem = result[0];
-                res.render('newssingle', { news: newsItem });
+                res.render('newssingle', {news: newsItem});
             }else {
                 throw err;
             }
@@ -181,9 +188,51 @@ app.get('/news/read/:id', (req, res) => {
     });
 });
 
+app.get('/photoupload', (req, res)=> {
+    res.render('photoupload');
+});
+
+app.post('/photoupload', upload.single('photoInput'), (req, res)=> {
+    let notice = '';
+    console.log(req.file);
+    console.log(req.body);
+    //const mimeType = mime.getType(req.file.path);
+    //console.log(mimeType);
+    const fileName = 'vp_' + Date.now() + '.jpg';
+    //fs.rename(req.file.path, './public/gallery/orig/' + req.file.originalname, (err)=> {
+    fs.rename(req.file.path, './public/gallery/orig/' + fileName, (err)=> {
+        console.log('Viga:' + err);
+    });
+    const mimeType = mime.getType('./public/gallery/orig/'+ fileName);
+    console.log('Tüüp:' + mimeType)
+    //Loon pildist väiksema normaliseeritud pildi ja thumbnaili
+    sharp('./public/gallery/orig/'+ fileName).resize(800,600).jpeg({quality:90}).toFile('./public/gallery/normal/'+fileName);
+    sharp('./public/gallery/orig/'+ fileName).resize(400,300).jpeg({quality:90}).toFile('./public/gallery/thumb/'+fileName);
+    
+
+    let sql = 'INSERT INTO vp_gallery (filename, originalname, alttext, privacy, userid) VALUES (?,?,?,?,?)';
+    const userid = 1;
+    conn.query(sql, [fileName, req.file.originalname, req.body.altInput, req.body.privacyInput, userid], (err, result)=>{
+        if(err) {
+            throw err;
+            notice = 'Foto andmete salvestamine ebaõnnestus!' + err;
+            res.render('photoupload', {notice: notice});
+        }
+        else{
+            notice = 'Pilt ' + req.file.originalname + ' salvestamine õnnestus!';
+            res.render('photoupload', {notice: notice});
+        }
+    });
+});
+
+app.get('/photogallery', (req, res)=> {
+    // Lisada andmebaasist lugemine, et galerii näitaks pilte andmebaasis!
+    res.render('photogallery');
+});
+
 app.listen(5210);
 
-
+// https://greeny.cs.tlu.ee/~rinde/vp23/veeb2/!!!!!!!!!!!!!!!!!!!!!!!!!!
 // app.get('/namelog', (req, res) =>{
 //     let name = [];
 //     fs.readFile("public/txtfiles/log.txt", "utf8", (err, data)=>{	
