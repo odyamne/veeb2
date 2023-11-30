@@ -20,10 +20,24 @@
 			<li><a href="/namelog">Nimede kirjed</a></li>
 			<li><a href="/eestifilm">Eesti film</a></li>
 			<li><a href="/news">Uudised</a></li>
-			<li><a href="/photoupload">Fotode üleslaadimine</a></li>
+			<li><a href="/photoupload">Fotode üleslaadimine</a> (ainult sisselogitud kasutajatele)</li>
 			<li><a href="/photogallery">Fotode galerii</a></li>
 
 		</ul>
+		<hr>
+		<h2>Logi sisse</h2>
+		<form method="POST">
+			<label for="emailInput">E-mail (kasutajatunnus)</label>
+			<input type="email" name="emailInput" id="emailInput">
+			<br>
+			<label for="passwordInput">Salasõna</label>
+			<input type="password" name="passwordInput" id="passwordInput">
+			<br>
+			<input type="submit" name="loginSubmit" value="Logi sisse!">
+			<span> <%= locals.notice || "Ootel!"%></span>
+		</form>
+		<p><a href="/logout">Logi välja</a></p>
+		<p>Või loo uus <a href="/signup">kasutajakonto</a>!</p>
 		<hr>
 </body>
 </html>
