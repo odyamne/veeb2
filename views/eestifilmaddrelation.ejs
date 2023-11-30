@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Ander Aava, veebiprogrammeerimine 2023</title>
+</head>
+<body>
+	<img src="/banner/vp_banner.png" alt="veebiprogrammeerimise kursuse banner">
+	<h1>Eesti film</h1>
+	<ul>
+		<li><a href="/eestifilm">Eesti filmide avaleht</a></li>
+		<li><a href="/">Avalehele</a></li>
+	</ul>
+	<hr>
+	<h2>Lisa näitleja</h2>
+	<!-- <form method="POST">
+		<label for="filmPersonInput">Filmitegelane</label>
+		<select name="filmPersonInput" id="filmPersonInput">
+			<option value="0" selected disabled>Vali filmitegelane</option>
+			<option value="1">Pärdik</option>
+			<option value="2">Elevant</option>
+		</select>
+		
+		<label for="filmInput">Film</label>
+		<select name="filmInput" id="filmInput">
+			<option value="0" selected disabled>Vali film</option>
+			<option value="1">Metsaelu</option>
+			<option value="2">Jahilugu</option>
+		</select>
+		
+		
+		<br>
+		<input type="submit" name="personRelationSubmit" value="Salvesta">
+	</form>
+	<p><%= locals.notice %></p>
+</body>
+</html> -->
+<form method="POST">
+	<label for="positionInput">amet</label>
+	<!-- Job Dropdown -->
+	<br>
+	<label for="job">roll:</label>
+	<select id="job" name="job" onchange="handleJobChange()">
+		<option value="0"  selected disabled>Choose a job</option>
+		<option value="1">näitleja</option>
+		<option value="2">rezisöör</option>
+	</select>
+
+	<!-- Role Dropdown -->
+	<label for="roll">näitleja:</label>
+	<select id="roll" name="roll" disabled>
+		<option value="0" disabled selected>Choose a role</option>
+		<% if (result.persons && result.persons.length > 0) { %>
+			<% result.persons.forEach(person => { %>
+				<option value="<%= person.id %>"><%= person.first_name %> <%= person.last_name %></option>
+			<% }); %>
+		<% } else { %>
+			<option value="">No positions available</option>
+		<% } %>
+	</select>
+
+	<!-- Movie Dropdown -->
+	<label for="movie">film:</label>
+	<select id="movie" name="movie">
+		<option value="0" disabled selected>Choose a movie</option>
+		<% if (result.movies && result.movies.length > 0) { %>
+			<% result.movies.forEach(movie => { %>
+				<option value="<%= movie.id %>"><%= movie.title %></option>
+			<% }); %>
+		<% } else { %>
+			<option value="">No movies available</option>
+		<% } %>
+	</select>
+
+	<label for="tegelane">tegelane</label>
+	<input type="text" name="tegelane" id="tegelane" placeholder="tegelase nimi ...">
+	<br>
+
+	<br>
+	<input type="submit" name="personSubmit" value="salvesta"><span id="infoPlace"></span>
+</form>
+
+<script>
+function handleJobChange() {
+	var jobDropdown = document.getElementById('job');
+	var roleDropdown = document.getElementById('roll');
+
+	// Enable or disable the role dropdown based on the selected job
+	if (jobDropdown.value === '1') {
+		roleDropdown.disabled = false;
+	} else {
+		// If the job is not 'actor', disable the role dropdown
+		roleDropdown.disabled = true;
+		// Optionally, reset the selected value in the role dropdown
+		roleDropdown.selectedIndex = 0;
+	}
+}
+</script>
+
+</body>
+</html>

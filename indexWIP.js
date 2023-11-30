@@ -95,47 +95,97 @@ app.get('/eestifilm/filmiloend', (req, res)=>{
 	//res.render('eestifilmlist', {filmlist: sqlresult});
 });
 
-app.get('/eestifilm/lisaseos', (req, res)=>{
-	//res.send('See töötab!');
-	//paneme async mooduli abil mitu asja korraga tööle
-	//1) loome tegevuste loendi
-	const myQueries = [
-		function(callback){
-			conn.execute('SELECT id,title from movie', (err, result)=>{
-				if(err) {
+app.get('/eestifilm/lisaseos', (req,res)=>
+{
+	const queryResults=[];
+	
+	//res.send('see töötab :D');
+	//paneme async mooduli abil korraga töötle
+	//loome tegevuste loendi
+	const myQueries=[
+		function(callback)
+		{
+			conn.execute('select id,title from movie', (err, result)=>
+			{
+				if(err)
+				{
 					return callback(err);
 				}
-				else {
+				else
+				{
+					queryResults.movies=result;
 					return callback(null, result);
 				}
 			});
 		},
-		function(callback){
-			conn.execute('SELECT id,first_name, last_name from person', (err, result)=>{
-				if(err) {
+		function(callback)
+		{
+			conn.execute('select id,first_name, last_name from person', (err, result)=>
+			{
+				if(err)
+				{
 					return callback(err);
 				}
-				else {
+				else
+				{
+					queryResults.persons=result;
+					return callback(null, result);
+				}
+			});
+		},
+		function(callback)
+		{
+			conn.execute('select id,position_name from position', (err, result)=>
+			{
+				if(err)
+				{
+					return callback(err);
+				}
+				else
+				{
+					queryResults.positions=result;
 					return callback(null, result);
 				}
 			});
 		}
 	];
-	//paneme need tegevused asünkroonselt paralleelselt tööle
-	async.parallel(myQueries, (err, results)=>{
-		if (err) {
+	//paneme tööle asükroonselt
+	async.parallel(myQueries, (err, results)=>
+	{
+		if (err)
+		{
 			throw err;
 		}
-		else {
+		else
+		{
 			console.log(results);
-			//mis kõik teha, ka render osa vajalike tükkidega
+	
+			res.render('eestifilmaddrelation', {result:queryResults});
 		}
 	});
 	
-	
-	res.render('eestifilmaddrelation');
 });
 
+app.post('/eestifilm/lisaseos', (req,res)=>
+{
+	console.log(req.body);
+	let notice='';
+	let sql='INSERT INTO person_in_movie (person_id, movie_id, position_id, role) VALUES (?,?,?,?)';
+	conn.query(sql, [req.body.roll, req.body.movie, req.body.job,req.body.tegelane], (err, result) =>
+	{
+		if (err)
+		{
+			throw err;
+			notice='andmete salvestamine ebaõnnestus'+err;
+			res.render('eestifilmaddrelation', {notice: notice});
+		}
+		else
+		{
+			notice='filmitegelase'+' '+req.body.role+' '+ req.body.movie+' '+ req.body.job+' '+ req.body.tegelane+'lisamine õnnestus';
+			res.render('eestifilmaddrelation', {notice: notice, result:queryResults});
+		}
+	});
+});
 
 app.get('/eestifilm/lisapersoon', (req, res)=>{
     res.render('eestifilmaddperson')
