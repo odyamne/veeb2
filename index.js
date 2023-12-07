@@ -2,12 +2,10 @@ const express = require('express');
 const app = express();
 const fs = require("fs");
 //Kui kõik db asjad pool-is, siis mysql moodulit siia ei ole vaja
-const mysql = require('mysql2');
 const bodyparser = require('body-parser');
 const dateInfo = require('./src/datetime_both');
 const dbConfig = require('../../vp23config');
 //Kui kõik db asjad pool-is, siis mysql
-const dataBase = 'if23_ander_aa';
 const pool = require('./src/dbPool').pool;
 const timeInfo = require('./src/datetime_et');
 const multer = require('multer');
@@ -29,15 +27,6 @@ app.set('view engine', 'ejs');
 app.use(express.static('public'));
 //app.use(bodyparser.urlencoded({extended:false})); ENNE FOTOGALERIID
 app.use(bodyparser.urlencoded({extended:true}));
-
-//loon andmebaasiühenduse, kui kõik on POOL failis, pole allolevat siin vaja
-const conn = mysql.createConnection({
-    host: dbConfig.configData.host,
-    user: dbConfig.configData.user,
-    password: dbConfig.configData.password,
-    database: dataBase
-});
-
 
 //routes
 app.get('/', (req, res) =>{
