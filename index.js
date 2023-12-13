@@ -18,15 +18,17 @@ const async = require('async');
 const bcrypt = require('bcrypt');
 //Sessiooni jaoks
 const session = require('express-session');
+
+app.use(bodyparser.urlencoded({extended:true}));
 app.use(session({secret:'superdupermegasalajanevõti', saveUninitialized:true, resave:false}));
 let mySession;
 
-
-
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
-//app.use(bodyparser.urlencoded({extended:false})); ENNE FOTOGALERIID
-app.use(bodyparser.urlencoded({extended:true}));
+
+// Kasutame marsruute
+const newsRouter = require('./routes/news');
+app.use('/news', newsRouter);
 
 //routes
 app.get('/', (req, res) =>{
@@ -42,7 +44,7 @@ app.post('/', (req, res) =>{
     }
     else {
         console.log('Hea..');
-        let sql = "SELECT password FROM vp_users WHERE email=?" ;
+        let sql = "SELECT id, password FROM vp_users WHERE email=?" ;
         pool.getConnection((err, conn)=>{
             if(err){
                 throw err;
@@ -68,8 +70,7 @@ app.post('/', (req, res) =>{
                             bcrypt.compare(req.body.passwordInput, result[0].password, (err, compresult)=>{
                                 if(err){
                                     throw err;
-                                    res.render('index', {notice: notice});
-                                    conn.release();
+
                                 }
                                 else{
                                     if(compresult){
@@ -77,6 +78,7 @@ app.post('/', (req, res) =>{
                                         notice = 'Oled sees!';
                                         mySession = req.session;
                                         mySession.userName = req.body.emailInput;
+                                        mySession.userId = result[0].id;
                                         res.render('index', {notice: notice});
                                         conn.release();
                                     }
@@ -92,9 +94,8 @@ app.post('/', (req, res) =>{
                     }
                 });//ANDMEBAASI LÕPP
             }
-        });//POOLI LÕPP
+        });//POOL-I LÕPP
     }
-    res.render('index', {notice: notice});
 });
 
 app.get('/logout', (req, res)=>{
@@ -321,101 +322,14 @@ app.get('/namelog', (req, res) =>{
     });
 });
 
-app.get('/news', (req,res)=> {
-	res.render('news');
-});
-
-
-app.get('/news/add', (req,res)=> {
-	res.render('addnews');
-});
-
-app.post('/news/add', (req,res)=> {
-	let notice = '';
-	let newsAddSql  = 'INSERT INTO vp_news (title, content, expire, userid) VALUES (?, ?, ?, 1)';
-    pool.getConnection((err, conn)=>{
-        if(err){
-            throw err;
-        }
-        else{
-            conn.query(newsAddSql, [req.body.titleInput, req.body.contentInput, req.body.expireInput], (err, result)=>{
-                if(err) {
-                    notice = 'Andmete salvestamine ebaõnnestus' + err;
-                    res.render('addnews', {notice: notice});
-                    conn.release();
-                    throw err;
-                }
-                else {
-                    notice = 'Uudise ' + req.body.titleInput + ' salvestamine õnnestus';
-                    res.render('addnews', {notice: notice});
-                    conn.release();
-                }
-            });
-        }
-    });
-});
-
-
-app.get('/news/read', (req, res)=> {
-	//let allNews = 'SELECT * FROM "vpnews" WHERE expire > ? AND deleted IS NULL ORDER BY id DESC';
-	let timeSQL = timeInfo.dateSQLformated();
-	let readNewsSql = 'SELECT * FROM vp_news WHERE expire > \'' + timeSQL + '\' AND deleted IS NULL ORDER BY id DESC';
-    pool.getConnection((err, conn)=>{
-        if(err){
-            throw err;
-        }
-        else{
-            conn.query(readNewsSql, [timeSQL], (err, result)=>{
-            //conn.query(allNews,  (err, result)=>{
-                if (err){
-                    throw err;
-                    conn.release();
-                }
-                else {
-                    let newsList = result;
-                    res.render('readnews', {newsList: newsList});
-                    conn.release();
-                }
-            });
-        }
-    });
-});
-
-app.get('/news/read/:id', (req, res) => { 
-    // Spetsiifilise ID-ga SQL päring
-    let newsSQL = 'SELECT * FROM vp_news WHERE id = ? AND deleted IS NULL';
-    // Võta ID päringust
-    let newsID = req.params.id;
-    pool.getConnection((err, conn)=>{
-        if(err){
-            throw err;
-        }
-        else{
-    // Vii päring läbi
-            conn.query(newsSQL, [newsID], (err, result) => {
-                if (err) {
-                    throw err;
-                    conn.release();
-                } else {
-                    if (result.length > 0) {
-                        const newsItem = result[0];
-                        res.render('newssingle', {news: newsItem});
-                        conn.release()
-                    }else {
-                        throw err;
-                        conn.release()
-                    }
-                }
-            });
-        }
-    });
-});
 
 app.get('/photoupload', checkLogin, (req, res)=> {
     res.render('photoupload');
+    console.log('Sisseloginud kasutaja: ' + req.session.userId);
 });
 
 app.post('/photoupload', upload.single('photoInput'), (req, res)=> {
+    
     let notice = '';
     console.log(req.file);
     console.log(req.body);
@@ -428,17 +342,17 @@ app.post('/photoupload', upload.single('photoInput'), (req, res)=> {
     console.log('Tüüp:' + mimeType)
     //Loon pildist väiksema normaliseeritud pildi ja thumbnaili
     sharp('./public/gallery/orig/'+ fileName).resize(800,600).jpeg({quality:90}).toFile('./public/gallery/normal/'+fileName);
-    sharp('./public/gallery/orig/'+ fileName).resize(200,150).jpeg({quality:90}).toFile('./public/gallery/thumb/'+fileName);
+    sharp('./public/gallery/orig/'+ fileName).resize(200,150).jpeg({quality:90}).toFile('./public/gallery/thumbs/'+fileName);
     
 
     let sql = 'INSERT INTO vp_gallery (filename, originalname, alttext, privacy, userid) VALUES (?,?,?,?,?)';
-    const userid = 1;
+    //const userid = 1;
     pool.getConnection((err, conn)=>{
         if(err){
             throw err;
         }
         else{
-            conn.query(sql, [fileName, req.file.originalname, req.body.altInput, req.body.privacyInput, userid], (err, result)=>{
+            conn.query(sql, [fileName, req.file.originalname, req.body.altInput, req.body.privacyInput, req.session.userId], (err, result)=>{
                 if(err) {
                     throw err;
                     notice = 'Foto andmete salvestamine ebaõnnestus!' + err;
@@ -456,15 +370,21 @@ app.post('/photoupload', upload.single('photoInput'), (req, res)=> {
 });
 
 app.get('/photogallery', (req, res)=> {
+
 	let photoList = [];
-	let sql = 'SELECT id,filename,alttext FROM vp_gallery WHERE privacy > 1 AND deleted IS NULL ORDER BY id DESC';
+    let privacy = 3; // 3 = avalik
+    if(req.session.userId){
+        privacy = 2; // 2 = sisseloginud ainult
+    }
+	let sql = 'SELECT id,filename,alttext FROM vp_gallery WHERE privacy >= ? AND deleted IS NULL ORDER BY id DESC';
+    
     // Teeme db ühenduse pooli kaudu
     pool.getConnection((err, conn)=>{
         if(err){
             throw err;
         }
         else{
-            conn.execute(sql, (err,result)=>{ //Andmebaasi algus
+            conn.execute(sql, [privacy], (err,result)=>{ //Andmebaasi algus
                 if (err){
                     throw err;
                     res.render('photogallery', {photoList : photoList});
@@ -515,3 +435,11 @@ app.listen(5210);
 //         }
 //     });
 // });
+
+
+// Failitüübi tuvastus fotode üleslaadimisel if-lausetega
+// Fotode üleslaadimisel portrait/landscape eristamine ja korrektselt skaleerimine!!! Ratio swapped/ Proportsioonide säilitamine - googelda, kuidas SHARP-i kasutada selleks
+// Kuva galerii fotode all üleslaadija ees ja perenimi
+// SELECT vp_gallery.id, filename, alttext, firstname, lastname FROM vp_gallery JOIN vp_use
+// rs ON vp_gallery.userid = vp_users.id WHERE vp_gallery.privacy >= 2 AND deleted IS NULL GROUP BY vp_gallery.id DESC;
+// Sammud on ka /~rinde/vp23 all!
